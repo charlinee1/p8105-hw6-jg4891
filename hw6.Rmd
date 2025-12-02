@@ -1,0 +1,30 @@
+---
+title: "hw6"
+output: github_document
+date: "2025-12-02"
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(tidyverse)
+homi <- read_csv("homicide-data.csv")
+```
+
+## Q1 
+```{r}
+homi <- homi %>%
+  mutate(
+    city_state = paste(city, state, sep = ", "),
+    solved = if_else(str_detect(disposition, "Closed"), 1, 0)
+  ) %>%
+  filter(!city_state %in% c("Dallas, TX", "Phoenix, AZ",
+                            "Kansas City, MO", "Tulsa, AL")) %>%
+  filter(victim_race %in% c("White", "Black")) %>%
+  mutate(
+    victim_age = na_if(victim_age, "Unknown"),
+    victim_age = as.numeric(victim_age)
+  )
+
+
+```
+
