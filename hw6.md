@@ -124,3 +124,80 @@ city_results %>%
 Compared to female, males on average are less likely to have their cases
 solved. As from the plot, we can see most cities’ odds ratios fall under
 1.
+
+## Q2
+
+``` r
+library(p8105.datasets)
+data("weather_df")
+```
+
+``` r
+we_df <- weather_df
+fit <- lm(tmax ~ tmin + prcp, data = we_df)
+```
+
+create a function
+
+``` r
+boot_fun <- function(df) {
+  
+  # resample rows with replacement
+  boot_df <- df %>% sample_frac(replace = TRUE)
+  
+  # fit model
+  fit_boot <- lm(tmax ~ tmin + prcp, data = boot_df)
+  
+  # extract R^2 from glance()
+  r2 <- glance(fit_boot)$r.squared
+  
+  # extract coefficients
+  coefs <- tidy(fit_boot)
+  
+  b1 <- coefs$estimate[coefs$term == "tmin"]
+  b2 <- coefs$estimate[coefs$term == "prcp"]
+  
+  ratio <- b1 / b2
+  
+  # return a tibble
+  tibble(r2 = r2, ratio = ratio)
+}
+```
+
+``` r
+set.seed(4)
+boot_res <- map_dfr(1:5000, ~ boot_fun(weather_df))
+```
+
+R^2 plot
+
+``` r
+boot_res %>%
+  ggplot(aes(x = r2)) +
+  geom_density(fill = "skyblue", alpha = 0.5) +
+  labs(title = "Bootstrap Distribution of R²") +
+  theme_minimal()
+```
+
+![](hw6_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+``` r
+boot_res %>%
+  ggplot(aes(x = ratio)) +
+  geom_density(fill = "orange", alpha = 0.5) +
+  labs(title = "Bootstrap Distribution of β1 / β2") +
+  theme_minimal()
+```
+
+![](hw6_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
+
+``` r
+r1 <- quantile(boot_res$r2, c(0.025, 0.975))
+
+r2 <- quantile(boot_res$ratio, c(0.025, 0.975))
+```
+
+The 95% bootstrap confidence interval for $r^2$ is 0.935 to 0.947.
+
+The 95% bootstrap confidence interval for $\hat\beta_1 / \hat\beta_2$ is
+-274.129 to -123.928
