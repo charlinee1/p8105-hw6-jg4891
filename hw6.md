@@ -1,17 +1,10 @@
----
-title: "hw6"
-output: github_document
-date: "2025-12-02"
----
+hw6
+================
+2025-12-02
 
-```{r setup, include=FALSE}
-library(readr)
-library(tidyverse)
-homi <- read_csv("homicide-data.csv")
-```
+## Q1
 
-## Q1 
-```{r}
+``` r
 homi <- homi %>%
   mutate(
     city_state = paste(city, state, sep = ", "),
@@ -26,7 +19,7 @@ homi <- homi %>%
   )
 ```
 
-```{r}
+``` r
 # 1. Filter to Baltimore
 balt <- homi %>%
   filter(city_state == "Baltimore, MD")
@@ -52,4 +45,6 @@ results_balt %>%
   knitr::kable(digits = 3)
 ```
 
-
+| term           |    OR | conf.low | conf.high | p.value |
+|:---------------|------:|---------:|----------:|--------:|
+| victim_sexMale | 0.355 |    0.267 |     0.468 |       0 |
