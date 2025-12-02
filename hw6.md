@@ -200,4 +200,137 @@ r2 <- quantile(boot_res$ratio, c(0.025, 0.975))
 The 95% bootstrap confidence interval for $r^2$ is 0.935 to 0.947.
 
 The 95% bootstrap confidence interval for $\hat\beta_1 / \hat\beta_2$ is
--274.129 to -123.928
+-274.129 to -123.928.
+
+## Q3
+
+``` r
+bw <- read_csv("birthweight.csv") %>% clean_names() %>%              # clean variable names
+  mutate(
+    # Convert baby sex to factor
+    babysex = factor(babysex,
+                     levels = c(1, 2),
+                     labels = c("male", "female")),
+    
+    # Convert malformation indicator to logical
+    malform = factor(malform,
+                     levels = c(0, 1),
+                     labels = c("absent", "present")),
+    
+    # Convert parental race to factor
+    frace = factor(frace,
+                   levels = c(1, 2, 3, 4, 8, 9),
+                   labels = c("white", "black", "asian", "puerto_rican", 
+                              "other", "unknown")),
+    
+    mrace = factor(mrace,
+                   levels = c(1, 2, 3, 4, 8),
+                   labels = c("white", "black", "asian", "puerto_rican", "other")),
+    
+    # Ensure variables that are meant to be numeric are treated as numeric
+    across(c(bhead, blength, bwt, delwt, fincome, gaweeks, menarche, 
+             mheight, momage, parity, pnumlbw, pnumsga, ppbmi, ppwt, 
+             smoken, wtgain),
+           as.numeric)
+  )
+```
+
+    ## Rows: 4342 Columns: 20
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## dbl (20): babysex, bhead, blength, bwt, delwt, fincome, frace, gaweeks, malf...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+bw_1 <- bw %>%
+  mutate(
+    babysex = factor(babysex),    # ensure babysex is factor
+    fincome = as.numeric(fincome),
+    gaweeks = as.numeric(gaweeks)
+  )
+
+fit1 <- lm(bwt ~ babysex + fincome + gaweeks, data = bw_1)
+fit1
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = bwt ~ babysex + fincome + gaweeks, data = bw_1)
+    ## 
+    ## Coefficients:
+    ##   (Intercept)  babysexfemale        fincome        gaweeks  
+    ##        489.58         -94.57           2.16          65.33
+
+``` r
+bw_1 %>%
+  add_predictions(fit1) %>%
+  add_residuals(fit1)%>%
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(
+    x = "Fitted Birthweight",
+    y = "Residuals",
+    title = "Residuals vs Fitted Values: Model 1"
+  ) +
+  theme_minimal()
+```
+
+![](hw6_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+This model is based on a combination of biological reasoning and
+exploratory analysis. Gestational age is one of the strongest
+determinants of fetal growth, while family income may influence maternal
+health behaviors and prenatal care access. Baby’s sex is known to be
+associated with small but systematic differences in average birthweight.
+
+cross_validation
+
+``` r
+set.seed(2)
+
+cv_df <- 
+  crossv_mc(bw, n = 150) %>%   
+  mutate(
+    train = map(train, as_tibble),
+    test  = map(test, as_tibble)
+  )
+
+cv_models <- cv_df %>%
+  mutate(
+    # Model 1
+    mod1 = map(train, ~ lm(bwt ~ babysex + fincome + gaweeks, data = .x)),
+    
+    # Model 2
+    mod2 = map(train, ~ lm(bwt ~ blength + gaweeks, data = .x)),
+    
+    # Model 3
+    mod3 = map(train, ~ lm(bwt ~ bhead * blength * babysex, data = .x))
+  )
+
+cv_results <- cv_models %>%
+  mutate(
+    rmse_mod1 = map2_dbl(mod1, test, ~ rmse(.x, .y)),
+    rmse_mod2 = map2_dbl(mod2, test, ~ rmse(.x, .y)),
+    rmse_mod3 = map2_dbl(mod3, test, ~ rmse(.x, .y))
+  )
+
+cv_results %>%
+  pivot_longer(
+    starts_with("rmse"),
+    names_to = "model",
+    values_to = "rmse"
+  ) %>%
+  mutate(model = fct_inorder(model)) %>%
+  group_by(model) %>%
+  summarise(mean_rmse = mean(rmse)) %>%
+  knitr::kable(digits = 2)
+```
+
+| model     | mean_rmse |
+|:----------|----------:|
+| rmse_mod1 |    461.05 |
+| rmse_mod2 |    334.97 |
+| rmse_mod3 |    289.20 |
