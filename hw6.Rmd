@@ -7,6 +7,7 @@ date: "2025-12-02"
 ```{r setup, include=FALSE}
 library(readr)
 library(tidyverse)
+library(broom)
 homi <- read_csv("homicide-data.csv")
 ```
 
@@ -52,4 +53,23 @@ results_balt %>%
   knitr::kable(digits = 3)
 ```
 
+```{r}
+
+city_results <- homi %>%
+  group_by(city_state) %>%
+  nest() %>%
+  mutate(
+    fit = map(data, ~ glm(
+      solved ~ victim_age + victim_race + victim_sex,
+      data = .x,
+      family = binomial()
+    )),
+    tidy_fit = map(fit, ~ tidy(.x, exponentiate = TRUE, conf.int = TRUE))
+  ) %>%
+  unnest(tidy_fit) %>%
+  filter(str_detect(term, "victim_sexMale")) %>%
+  select(city_state, term, OR = estimate, conf.low, conf.high, p.value)
+
+city_results
+```
 
