@@ -73,3 +73,22 @@ city_results <- homi %>%
 city_results
 ```
 
+```{r}
+city_results %>%
+  mutate(city_state = fct_reorder(city_state, OR)) %>%   # order by OR
+  ggplot(aes(x = OR, y = city_state)) +
+  geom_point(size = 2, color = "darkblue") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high),
+                 height = 0.2, color = "gray40") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "Adjusted Odds Ratios (Male vs Female Victims) by City",
+    x = "Adjusted Odds Ratio (Male vs Female)",
+    y = "City"
+  ) +
+  theme_minimal()
+```
+
+Compared to female, males on average are less likely to have their cases solved. As from the plot, we can see most cities' odds ratios fall under 1. 
+
+

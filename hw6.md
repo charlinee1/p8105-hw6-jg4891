@@ -94,3 +94,33 @@ city_results
     ##  9 Chicago, IL     victim_sexMale 0.391   0.321      0.476 9.40e-21
     ## 10 Cincinnati, OH  victim_sexMale 0.206   0.0977     0.390 5.98e- 6
     ## # ℹ 37 more rows
+
+``` r
+city_results %>%
+  mutate(city_state = fct_reorder(city_state, OR)) %>%   # order by OR
+  ggplot(aes(x = OR, y = city_state)) +
+  geom_point(size = 2, color = "darkblue") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high),
+                 height = 0.2, color = "gray40") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "Adjusted Odds Ratios (Male vs Female Victims) by City",
+    x = "Adjusted Odds Ratio (Male vs Female)",
+    y = "City"
+  ) +
+  theme_minimal()
+```
+
+    ## Warning: `geom_errobarh()` was deprecated in ggplot2 4.0.0.
+    ## ℹ Please use the `orientation` argument of `geom_errorbar()` instead.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+    ## `height` was translated to `width`.
+
+![](hw6_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+Compared to female, males on average are less likely to have their cases
+solved. As from the plot, we can see most cities’ odds ratios fall under
+1.
